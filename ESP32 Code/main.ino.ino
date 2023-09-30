@@ -21,6 +21,12 @@ AsyncWebServer server(80);
 const int MAX_DEVICES = 50;  // Adjust based on your requirements
 const int MAX_TIMESERIES_LENGTH = 1;
 
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+BLEServer* pServer = NULL;
+BLECharacteristic* pCharacteristic = NULL;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
 
 // Data structures
 struct BTData {
@@ -272,6 +278,34 @@ void setup() {
 
     Serial.println("Setting up OTA server...");
     setupOTA();
+
+    //Set up BLE server so the devices can see each other when they scan for bluetooth devices
+    Serial.println("Setting up BLE server...");
+
+    // Create the BLE Device
+    BLEDevice::init("MinasTirith"); // you can use any name here
+
+    // Create the BLE Server
+    pServer = BLEDevice::createServer();
+
+    // Create the BLE Service
+    BLEService *pService = pServer->createService(SERVICE_UUID);
+
+    // Create a BLE Characteristic
+    pCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID,
+                        BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE  |
+                        BLECharacteristic::PROPERTY_NOTIFY |
+                        BLECharacteristic::PROPERTY_INDICATE
+                      );
+
+    // Start the service
+    pService->start();
+
+    // Start advertising
+    pServer->getAdvertising()->start();
+    Serial.println("BLE server is advertising now...");
 }
 
 // Main loop
